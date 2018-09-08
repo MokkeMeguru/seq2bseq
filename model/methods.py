@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ Helper functions for VariationalModel class """
 
 from __future__ import print_function
@@ -7,7 +8,7 @@ import math
 import random
 
 import tensorflow as tf
-import tensorflow.contrib.legacy_seq2seq.python.ops.seq2seq as s2s
+from tensorflow.contrib.legacy_seq2seq.python.ops import seq2seq as s2s
 
 
 def linearOutcomePrediction(zs, params_pred, scope=None):
@@ -42,7 +43,7 @@ def flexibleOutcomePrediction(zs, params_pred, use_sigmoid=False, scope=None):
     """
     with s2s.variable_scope.variable_scope(scope or "outcomepred", reuse=True):
         weights_pred = params_pred[0]
-        biases_pred = params_pred
+        biases_pred = params_pred[1]
         hidden1 = tf.nn.tanh(tf.add(tf.matmul(zs, weights_pred['W1']), biases_pred['B1']))
         outcome_preds = tf.add(tf.matmul(hidden1, weights_pred['W2']), biases_pred['B2'])
         if use_sigmoid:
@@ -121,11 +122,11 @@ def getDecoding(encoder_state, inputs, cell,
     """
     with s2s.variable_scope.variable_scope(scope or 'seq2seq', reuse=True):
         if output_prejection is None:
-            cell = s2s.core_rnn_cell.OutputProjectionWrapper(cell, num_symbols, dtype=dtype)
+            cell = s2s.core_rnn_cell.OutputProjectionWrapper(cell, num_symbols)
         decode_probs, _ = s2s.embedding_rnn_decoder(
             inputs, encoder_state, cell, num_symbols,
             embedding_size, output_projection=output_prejection,
-            feed_previous=feed_previous, dtype=dtype)
+            feed_previous=feed_previous)
     return decode_probs
 
 
