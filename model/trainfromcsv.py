@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
     wyl = sorted(add_vocab_from_files(set(),
                                       ['../st-data/styled.csv', '../st-data/base.csv'],
-                                      get_word_yomi_list))
+                                      parse_func))
 
     """ Settings """
     max_seq_length = 30
@@ -168,5 +168,123 @@ if __name__ == '__main__':
         - slightly lower invar_importanceval and resume training
         Keep increasing invar_importanceval until val_reconstruction/outcome_error always begins to worsen. 
     Japanese:
+    実際には、次のようにモデルを訓練する必要があります。
+    1)  まず kl_importance = 0, invar_importance = 0 として、 
+        val_reconstruction_error + val_outcome_error が大きい間訓練します。
     
+    2)  val_reconstruction_error と val_outcome_error が低くなるような、
+        seq2seq_importanceval の良い値を求めます。
+    
+    3)  kl_importanceval を 徐々に 0 から 1 へ増加させます。
+        モデルを数 epoch ごとにセーブすることを忘れないで下さい。
+        突然 val_reconstruction/outcome_error が悪くなることがありますが、そのときは以下のようにして下さい。
+        - 訓練を中止して以前のモデルをリロードして下さい。
+        - ほんの少し kl_importanceval を下げて訓練を再開して下さい。
+    
+    4)  invar_importanceval を徐々に 0 から 1 へ増加させます。
+        モデルを数 epoch ごとにセーブすることを忘れないで下さい。
+        突然 val_reconstruction/outcome_error が悪くなることがありますが、その時は以下のようにして下さい。
+        - 訓練を中止して以前のモデルをリロードして下さい。
+        - ほんの少し invar_importanceval を下げて訓練を再開して下さい。
+        val_reconstruction/outcome_error が常に悪化する用になるまで invar_importanceval を増やして下さい。
+    """
+
+    # Train model:
+    """
+    example: [first]
+    train_losses, val_outcome_errors, val_seq2seq_errors = model.train(
+        train_seqs=train_data[0], train_outcomes=train_data[1],
+        test_seqs=test_data[0], test_outcomes=test_data[1],
+        which_model='joint', seq2seq_importanceval=0.95,
+        kl_importanceval=0.0, invar_importanceval=0.0,
+        max_epochs=50, invar_batchsize=32
+    )
+    """
+    """
+    # Revise this single sequence
+        
+    # model.restore('../output/0908-4th095.bin')
+    search_id = 1
+    def test(search_id, model):
+        init_seq = train_data[0][search_id: search_id + 1]
+        init_outcome = train_data[1][search_id: search_id + 1]
+        log_alpha = -1000
+
+        revision_results = \
+            model.barrierGradientRevise(init_seq, log_alpha=log_alpha,
+                                        outcome_opt_learn_rate=1.0,
+                                        max_outcome_opt_iter=1000,
+                                        use_adaptive=False)
+        x_star, z_star, inferred_improvement, \
+        outcome_star, reconstruct_init, z_init, \
+        outcome_init, avg_sigma_init, edit_dist = revision_results
+
+        if x_star != init_seq[0]:
+            print('{} -> {}'.format(init_seq[0], x_star[1]))
+            
+    def test_sentence(sentence, model):
+        log_alpha = -1000
+        init_seq = [get_word_yomi_list(sentence)]
+        revision_results = \
+            model.barrierGradientRevise(init_seq, log_alpha=log_alpha,
+                                        outcome_opt_learn_rate=1.0,
+                                        max_outcome_opt_iter=1000,
+                                        use_adaptive=False)
+        x_star, z_star, inferred_improvement, \
+        outcome_star, reconstruct_init, z_init, \
+        outcome_init, avg_sigma_init, edit_dist = revision_results
+        print('{} -> {}'.format(init_seq[0], x_star))
+    """
+    """
+    ex.
+    SUCCESS:
+    test_sentence('早く寝たい。', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.7482172]]
+    iter=200 obj=[[0.71754885]]
+    iter=300 obj=[[0.85257566]]
+    iter=400 obj=[[1.1158444]]
+    iter=500 obj=[[1.121194]]
+    iter=600 obj=[[1.3258313]]
+    iter=700 obj=[[0.90995586]]
+    Elliptical constraint value:[[0.99999994]]
+    ['ハヤク', 'ネ', 'タイ', '。'] -> ['ハヤク', 'ネ', 'タ', 'ホウ', 'ガ', 'ヨイ', 'ネ', '。']
+    test_sentence('それは良い。', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.31412524]]
+    Elliptical constraint value:[[0.9980601]]
+    ['ソレ', 'ハ', 'ヨイ', '。'] -> ['ソレ', 'ハ', 'ヨイ', 'ネ', '。']
+    test_sentence('応援する。', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.65189254]]
+    Elliptical constraint value:[[0.9958178]]
+    ['オウエン', 'スル', '。'] -> ['オウエン', 'シ', 'テル', '。']
+    test_sentence('鳥肌がたった。', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.37873054]]
+    Elliptical constraint value:[[0.99807376]]
+    ['トリハダ', 'ガ', 'タッ', 'タ', '。'] -> ['トリハダ', 'ガ', 'タッ', 'タ', 'ネ', '。']
+
+    Question:
+    test_sentence('今日は寒かった。', model)
+    iter=0 obj=[[0.]]
+    Elliptical constraint value:[[0.9977083]]
+    ['キョウ', 'ハ', 'サムカッ', 'タ', '。'] -> ['キョウ', 'ハ', 'サムカッ', 'タ', '。']
+    test_sentence('今日は寒かった', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.7380588]]
+    Elliptical constraint value:[[0.9816849]]
+    ['キョウ', 'ハ', 'サムカッ', 'タ'] -> ['キョウ', 'ハ', 'サムカッ', 'タ', 'ネ', '。']
+    test_sentence('夕飯は？', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.36785245]]
+    Elliptical constraint value:[[0.9974266]]
+    ['ユウハン', 'ハ', '？'] -> ['ユウハン', 'ハ', 'ドウ', 'シヨ', 'ウ', 'カ', '？']
+    
+    Failed:
+    test_sentence('何か不安だなぁ。', model)
+    iter=0 obj=[[0.]]
+    iter=100 obj=[[0.33364055]]
+    Elliptical constraint value:[[0.99713546]]
+    ['ナニ', 'カ', 'フアン', 'ダ', 'ナァ', '。'] -> ['ナニ', 'カ', 'ノム', '？']
     """

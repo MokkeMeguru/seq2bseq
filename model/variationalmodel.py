@@ -603,7 +603,7 @@ class VariationalModel(object):
         # それぞれの単語の誤りの数
         predicted_outcomes = [outcome_predictions[i][0] for i in range(len(batch_seqs))]
         reconstructed_seqs = [[self.vocab[vocab_index] for vocab_index in list(decodings[:, i])]
-                              for i in range(batch_seqs)]
+                              for i in range(len(batch_seqs))]
         return (predicted_outcomes, reconstructed_seqs, outcome_errors,
                 reconstruction_errors, np.mean(pred_sigmas))
 
@@ -730,7 +730,7 @@ class VariationalModel(object):
             print_iter = math.ceil(max_outcome_opt_iter / 10.0)
         index_seq = self.convertToIndexSeq(input_seq)
         input_trans = np.array(index_seq).T
-        feed_dict1 = {self.enc_inp[t]: input_seq[t] for t in range(len(index_seq[0]))}
+        feed_dict1 = {self.enc_inp[t]: input_trans[t] for t in range(len(index_seq[0]))}
         outcome_init, z_val, sigmas_init = self.sess.run([self.outcome0, self.z0, self.sigma0],
                                                          feed_dict1)
         sigmas = sigmas_init[0]
@@ -754,7 +754,7 @@ class VariationalModel(object):
                    reconstruct_init, z_init, np.ravel(outcome_init)[0], avg_sigma_init, 0.0
         K = -2 * (np.log(np.power(2 * np.pi, self.cell.state_size / 2))
                   + 0.5 * np.sum(np.log(sigmas_sq)) + log_alpha)
-        A = np.linalg.prinv(Covar) / K
+        A = np.linalg.pinv(Covar) / K
         # A is matrix s.t. z^T A z < 1 corresponds to alpha-counter of N(0, diag(sigmas))
         convergence_thresh = 1e-8
         last_obj = -1e6
