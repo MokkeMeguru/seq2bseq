@@ -1,3 +1,5 @@
 /venv/
 /.idea/
 /output/
+/model/__pycache__/
+/st-data/
