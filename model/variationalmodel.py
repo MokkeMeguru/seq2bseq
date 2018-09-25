@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """ Seq2betterSeq framework with variational autoencoder"""
-
+# TODO: Create an argument for noised input
 from __future__ import print_function
 from __future__ import division
 
@@ -482,7 +482,9 @@ class VariationalModel(object):
                 raise ValueError('batch_seqs and batch_outcomes do not agree')
             batch_outcomes = np.array(batch_outcomes)
         batch_outcomes = batch_outcomes.reshape(len(batch_outcomes), 1)
-        index_seqs = self.convertToIndexSeq(batch_seqs)
+        # TODO: change Noised Index Seq
+        # index_seqs = self.convertToIndexSeq(batch_seqs)
+        index_seqs = self.convertToNoisedIndexSeq(batch_seqs)
         # reformatted seq in terms of indices in vocab
         # 語彙のインデックスの形式で再フォーマットされたシーケンス
         # Dimshuffle to seq_len * batch_size
@@ -933,6 +935,15 @@ class VariationalModel(object):
             new_probs[t][0][x0_index_t] = decoded_probs[t][0][x0_index_t] + betas[t]
         return new_probs
 
+    # TODO: create convertToNoisedIndexSeq(self, seqs):
+    def convertToNoisedIndexSeq(self, seqs):
+        """
+
+        :param seqs:
+        :return:
+        """
+        return [np.array(self.pad_sequence(self.index_noised_sequnece(seq))) for seq in seqs]
+
     def convertToIndexSeq(self, seqs):
         """
         English:
@@ -953,6 +964,23 @@ class VariationalModel(object):
             return [np.array(self.pad_sequence(self.index_sequence(seq))[::-1]) for seq in seqs]
         else:
             return [np.array(self.pad_sequence(self.index_sequence(seq))) for seq in seqs]
+
+    # TODO: index_noised_sequence(self, seq) -> if random() > 0.1 and s in self.vocab else self.UNK_ID for s in seq
+    def index_noised_sequence(self, seq):
+        if len(seq) > self.max_seq_length:
+            raise ValueError('batch contains sequence of length > max_seq_length')
+        elif self.use_unknown:
+            index_seq = [self.vocab.index(s)
+                         if (s in self.vocab) and (np.random.rand() > 0.1)
+                         else self.UNK_ID for s in seq]
+        else:
+            index_seq = []
+            for s in seq:
+                if s in self.vocab:
+                    index_seq.append(self.vocab.index(s))
+                else:
+                    raise ValueError('Unknown symbol: ' + str(s))
+        return index_seq
 
     def index_sequence(self, seq):
         if len(seq) > self.max_seq_length:

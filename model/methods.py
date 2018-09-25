@@ -130,7 +130,7 @@ def getDecoding(encoder_state, inputs, cell,
     return decode_probs
 
 
-def cretaeVariationalVar(inputs, cell, num_symbols, embedding_size,
+def createVariationalVar(inputs, cell, num_symbols, embedding_size,
                          feed_previous=False, output_projection=None,
                          dtype=s2s.dtypes.float32, scope=None):
     """
@@ -214,6 +214,7 @@ for i1, c1 in enumerate(['a', 'b', 'c']):
  2 : c
 """
 
+
 def mutate_lengthconstrained(init_seq, num_edits, vocab, length_range=(10, 20)):
     """
     English:
@@ -227,7 +228,7 @@ def mutate_lengthconstrained(init_seq, num_edits, vocab, length_range=(10, 20)):
     (1) 何もしない (2) 置換 (3) 削除 (4) 挿入
     それぞれの編集は、可能なシンボル(単語など)や位置に対して均一に(偏りなく)行われます。
     """
-    min_seq_length,  max_seq_length = length_range
+    min_seq_length, max_seq_length = length_range
     new_seq = init_seq[:]
     for i in range(num_edits):
         operation = random.randint(1, 4)
