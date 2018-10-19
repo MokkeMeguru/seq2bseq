@@ -942,7 +942,7 @@ class VariationalModel(object):
         :param seqs:
         :return:
         """
-        return [np.array(self.pad_sequence(self.index_noised_sequnece(seq))) for seq in seqs]
+        return [np.array(self.pad_sequence(self.index_noised_sequence(seq))) for seq in seqs]
 
     def convertToIndexSeq(self, seqs):
         """
