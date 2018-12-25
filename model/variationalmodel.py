@@ -955,7 +955,7 @@ class VariationalModel(object):
 
     def convertToEncoderSeq(self, seqs, reverse_seq=False):
         """
-        English:
+        English:s
         Reformat sequence in terms of REVERSED vocab-indices for encoder RNN
         Japanese:
         encoder RNN への入力のために、単語シーケンスから、逆順にした単語 index のシーケンスを作成する。
